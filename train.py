@@ -130,8 +130,8 @@ def main(args):
         # Determine validation loss
         for X, Y in val_loader:
             target = (Y*255).long().squeeze(1)
-            target = utils.map_id_to_train_id(target)
-            predictions = model(X)
+            target = utils.map_id_to_train_id(target).to(device)
+            predictions = model(X).to(device)
             loss_val = criterion(predictions, target)
             val_loss_epoch += loss_val
 
