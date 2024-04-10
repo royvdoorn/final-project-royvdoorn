@@ -94,7 +94,7 @@ def main(args):
 
     # define model
     model = SegNet()#.cuda()
-    model.load_state_dict(torch.load("SegNet model"))
+    #model.load_state_dict(torch.load("SegNet model"))
 
     #layers_not_to_freeze = ['dec_1', 'dec_2', 'dec_3', 'dec_4', 'dec_5']
     #freeze_layers(model, layers_not_to_freeze)
@@ -106,7 +106,7 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
 
     # training/validation loop
-    epochs = 10
+    epochs = 25
 
     train_loss = []
     val_loss = []
@@ -141,7 +141,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet model data aug')
+    torch.save(model.state_dict(), 'SegNet model data aug only')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -186,7 +186,7 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet model reweight"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet model data aug"))
     model_SegNet.eval()
 
     model_Unet = SegNet()
@@ -218,7 +218,7 @@ def visualize():
     transform_x = transforms.Compose([transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
     path_local = "C:\\Users\\20192326\\Documents\\YEAR 1 AIES\\Neural networks for computer vision\\Assignment\\data"
-    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=complete_transform)#, target_transform=complete_transform) #args.data_path
+    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=regular_transform)#, target_transform=complete_transform) #args.data_path
 
     batch_size = 1
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
