@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=18
 #SBATCH --gpus=1
 #SBATCH --partition=gpu
-#SBATCH --time=3:00:00
+#SBATCH --time=5:00:00
 #SBATCH --mem-per-cpu=20G
 
 cd /gpfs/home6/scur0756/Final_Assignment/final-project-royvdoorn/

@@ -74,7 +74,7 @@ def main(args):
     # define transform
     complete_transform = transforms.Compose([transforms.Resize((256, 256)),
                                             #transforms.RandomVerticalFlip(p=0.25),
-                                            transforms.RandomResizedCrop(size=(256,256)),#, scale=(0.25, 1.0), ratio=(0.5, 1.5)),
+                                            transforms.RandomResizedCrop(size=(256,256), scale=(0.25, 0.75), ratio=(0.5, 1.5)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
@@ -100,13 +100,13 @@ def main(args):
     #freeze_layers(model, layers_not_to_freeze)
 
     # define optimizer and loss function (don't forget to ignore class index 255)
-    weights = torch.tensor([1.0, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 1.5, 1.0, 1.5, 1.0, 1.5, 2.0, 1.0, 2.0, 1.5, 2.0, 2.0, 1.5])
-    criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=255).to(device)
+    #weights = torch.tensor([1.0, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 1.5, 1.0, 1.5, 1.0, 1.5, 2.0, 1.0, 2.0, 1.5, 2.0, 2.0, 1.5])
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=255).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.0001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
 
     # training/validation loop
-    epochs = 5
+    epochs = 10
 
     train_loss = []
     val_loss = []
@@ -141,7 +141,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet model reweight')
+    torch.save(model.state_dict(), 'SegNet model data aug')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -186,11 +186,11 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("SegNet model data aug"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet model reweight"))
     model_SegNet.eval()
 
     model_Unet = SegNet()
-    model_Unet.load_state_dict(torch.load("models\\SegNet model data aug"))
+    model_Unet.load_state_dict(torch.load("models\\SegNet model"))
     model_Unet.eval()
 
     mean = [0.485, 0.456, 0.406]
@@ -211,14 +211,14 @@ def visualize():
     # define transform
     complete_transform = transforms.Compose([transforms.Resize((256, 256)),
                                             #transforms.RandomVerticalFlip(p=0.25),
-                                            transforms.RandomResizedCrop(size=(256,256)),#, scale=(0.25, 1.0), ratio=(0.5, 1.5)),
+                                            transforms.RandomResizedCrop(size=(256,256), scale=(0.25, 0.75), ratio=(0.5, 1.5)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
     transform_x = transforms.Compose([transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
     path_local = "C:\\Users\\20192326\\Documents\\YEAR 1 AIES\\Neural networks for computer vision\\Assignment\\data"
-    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=regular_transform)#, target_transform=complete_transform) #args.data_path
+    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=complete_transform)#, target_transform=complete_transform) #args.data_path
 
     batch_size = 1
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -241,7 +241,7 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('SegNet data aug')
+        axs[0].set_title('SegNet reweight')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
         axs[1].set_title('SegNet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
