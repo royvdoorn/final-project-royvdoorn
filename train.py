@@ -100,12 +100,13 @@ def main(args):
     #freeze_layers(model, layers_not_to_freeze)
 
     # define optimizer and loss function (don't forget to ignore class index 255)
-    criterion = torch.nn.CrossEntropyLoss(ignore_index=255).to(device)
+    weights = torch.tensor([1.0, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 1.5, 1.0, 1.5, 1.0, 1.5, 2.0, 1.0, 2.0, 1.5, 2.0, 2.0, 1.5])
+    criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=255).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.0001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
 
     # training/validation loop
-    epochs = 25
+    epochs = 5
 
     train_loss = []
     val_loss = []
@@ -140,7 +141,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet model data aug')
+    torch.save(model.state_dict(), 'SegNet model reweight')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -185,11 +186,11 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet model data aug"))
+    model_SegNet.load_state_dict(torch.load("SegNet model data aug"))
     model_SegNet.eval()
 
     model_Unet = SegNet()
-    model_Unet.load_state_dict(torch.load("models\\SegNet model"))
+    model_Unet.load_state_dict(torch.load("models\\SegNet model data aug"))
     model_Unet.eval()
 
     mean = [0.485, 0.456, 0.406]
@@ -217,7 +218,7 @@ def visualize():
     transform_x = transforms.Compose([transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
     path_local = "C:\\Users\\20192326\\Documents\\YEAR 1 AIES\\Neural networks for computer vision\\Assignment\\data"
-    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=complete_transform)#, target_transform=complete_transform) #args.data_path
+    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=regular_transform)#, target_transform=complete_transform) #args.data_path
 
     batch_size = 1
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -226,7 +227,6 @@ def visualize():
         prediction_Segnet = model_SegNet(X)
         processed_SegNet = postprocess(prediction_Segnet, shape=(256, 256))
         print("Unique classes in SegNet prediction: ", np.unique(processed_SegNet))
-        print(processed_SegNet)
 
         prediction_Unet = model_Unet(X)
         processed_Unet = postprocess(prediction_Unet, shape=(256, 256))
