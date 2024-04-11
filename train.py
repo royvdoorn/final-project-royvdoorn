@@ -72,9 +72,9 @@ def main(args):
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
     # define transform
-    complete_transform = transforms.Compose([transforms.Resize((256, 256)),
+    complete_transform = transforms.Compose([transforms.Resize((270, 270)),
                                             #transforms.RandomVerticalFlip(p=0.25),
-                                            transforms.RandomResizedCrop(size=(256,256), scale=(0.25, 0.75), ratio=(0.5, 1.5)),
+                                            transforms.RandomResizedCrop(size=(270,270), scale=(0.25, 0.75), ratio=(0.5, 1.5)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
@@ -93,7 +93,7 @@ def main(args):
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#, num_worker=8)
 
     # define model
-    model = SegNet()#.cuda()
+    model = Efficiency_model()#.cuda()
     #model.load_state_dict(torch.load("SegNet model"))
 
     #layers_not_to_freeze = ['dec_1', 'dec_2', 'dec_3', 'dec_4', 'dec_5']
