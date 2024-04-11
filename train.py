@@ -67,14 +67,14 @@ def freeze_layers(model, layers_not_to_freeze):
 def main(args):
     """define your model, trainingsloop optimitzer etc. here"""
 
-    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
     # define transform
-    complete_transform = transforms.Compose([transforms.Resize((270, 270)),
+    complete_transform = transforms.Compose([transforms.Resize((256, 256)),
                                             #transforms.RandomVerticalFlip(p=0.25),
-                                            transforms.RandomResizedCrop(size=(270,270), scale=(0.25, 0.75), ratio=(0.5, 1.5)),
+                                            transforms.RandomResizedCrop(size=(256,256), scale=(0.25, 0.75), ratio=(0.5, 1.5)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
@@ -82,7 +82,7 @@ def main(args):
 
     # data loading
     path_local = "C:\\Users\\20192326\\Documents\\YEAR 1 AIES\\Neural networks for computer vision\\Assignment\\data"
-    dataset = Cityscapes(args.data_path, split='train', mode='fine', target_type='semantic', transforms=complete_transform) #args.data_path
+    dataset = Cityscapes(args.data_path, split='train', mode='fine', target_type='semantic', transforms=regular_transform) #args.data_path
     validation_ratio = 0.1
     val_size = int(validation_ratio*len(dataset))
     train_size = len(dataset)-val_size
@@ -186,7 +186,7 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet model data aug"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet model data aug only"))
     model_SegNet.eval()
 
     model_Unet = SegNet()
@@ -241,7 +241,7 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('SegNet reweight')
+        axs[0].set_title('SegNet data aug only')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
         axs[1].set_title('SegNet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)

@@ -156,6 +156,14 @@ class SegNet(nn.Module):
         self.norm_enc_5b = nn.BatchNorm2d(512, momentum=0.5)
         self.norm_enc_5c = nn.BatchNorm2d(512, momentum=0.5) 
 
+        # Encode stage 5
+        self.lat_a = nn.Conv2d(512, 1024, kernel_size=3, padding=1)
+        self.lat_b = nn.Conv2d(1024, 1024, kernel_size=3, padding=1)
+        self.lat_c = nn.Conv2d(1024, 512, kernel_size=3, padding=1)
+        self.norm_lat_a = nn.BatchNorm2d(1024, momentum=0.5)
+        self.norm_lat_b = nn.BatchNorm2d(1024, momentum=0.5)
+        self.norm_lat_c = nn.BatchNorm2d(512, momentum=0.5) 
+
         # Decode stage 5    
         self.dec_5a = nn.Conv2d(2*512, 512, kernel_size=3, padding=1)
         self.dec_5b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
@@ -188,7 +196,7 @@ class SegNet(nn.Module):
 
         # Decode stage 1    
         self.dec_1a = nn.Conv2d(2*64, 64, kernel_size=3, padding=1)
-        self.dec_1b = nn.Conv2d(64, 19, kernel_size=3, padding=1)
+        self.dec_1b = nn.Conv2d(64, 19, kernel_size=1, padding=0)
         self.norm_dec_1 = nn.BatchNorm2d(64, momentum=0.5)     
 
     def forward(self, x):
@@ -223,6 +231,11 @@ class SegNet(nn.Module):
         x = function.relu(self.norm_enc_5b(self.enc_5b(x))) 
         x5 = function.relu(self.norm_enc_5c(self.enc_5c(x)))
         x, ind5 = self.pool(x5)
+
+        # Latent space
+        x = function.relu(self.norm_lat_a(self.lat_a(x))) 
+        x = function.relu(self.norm_lat_b(self.lat_b(x))) 
+        x = function.relu(self.norm_lat_c(self.lat_c(x)))
 
         # Decode Stage 5
         x = self.unpool(x, ind5, output_size=size4)
