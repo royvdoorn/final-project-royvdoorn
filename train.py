@@ -141,7 +141,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet extra')
+    torch.save(model.state_dict(), 'SegNet meets Unet')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -150,7 +150,7 @@ def main(args):
     plt.ylabel("Loss")
     plt.title("Loss of neural network")
     plt.legend()
-    plt.savefig('Train performance of SegNet model')
+    plt.savefig('Train performance of SegNet meets Unet model')
 
     pass
 
@@ -186,11 +186,11 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet model data aug only"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet extra"))
     model_SegNet.eval()
 
-    model_Unet = SegNet()
-    model_Unet.load_state_dict(torch.load("models\\SegNet model"))
+    model_Unet = Unet()
+    model_Unet.load_state_dict(torch.load("models\\Unet"))
     model_Unet.eval()
 
     mean = [0.485, 0.456, 0.406]
@@ -241,9 +241,9 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('SegNet data aug only')
+        axs[0].set_title('SegNet extra')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
-        axs[1].set_title('SegNet')
+        axs[1].set_title('Unet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
         axs[2].set_title('Y')
         axs[3].imshow(X)
