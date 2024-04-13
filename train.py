@@ -73,7 +73,7 @@ def freeze_layers(model, layers_not_to_freeze):
 def main(args):
     """define your model, trainingsloop optimitzer etc. here"""
 
-    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
+    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
