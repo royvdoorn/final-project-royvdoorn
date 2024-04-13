@@ -67,7 +67,7 @@ def freeze_layers(model, layers_not_to_freeze):
 def main(args):
     """define your model, trainingsloop optimitzer etc. here"""
 
-    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -93,7 +93,7 @@ def main(args):
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#, num_worker=8)
 
     # define model
-    model = SegNet()#.cuda()
+    model = Efficiency_model()#.cuda()
     #model.load_state_dict(torch.load("SegNet model"))
 
     #layers_not_to_freeze = ['dec_1', 'dec_2', 'dec_3', 'dec_4', 'dec_5']
@@ -186,7 +186,7 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet extra"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet meets Unet"))
     model_SegNet.eval()
 
     model_Unet = Unet()
@@ -241,7 +241,7 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('SegNet extra')
+        axs[0].set_title('SegNet meet Unet')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
         axs[1].set_title('Unet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)

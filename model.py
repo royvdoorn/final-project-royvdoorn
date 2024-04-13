@@ -159,13 +159,13 @@ class SegNet(nn.Module):
         # Encode latent
         self.lat_a = nn.Conv2d(512, 1024, kernel_size=3, padding=1)
         self.lat_b = nn.Conv2d(1024, 1024, kernel_size=3, padding=1)
-        self.lat_c = nn.Conv2d(1024, 512, kernel_size=3, padding=1)
+        self.lat_c = nn.Conv2d(1024, 1024, kernel_size=3, padding=1)
         self.norm_lat_a = nn.BatchNorm2d(1024, momentum=0.5)
         self.norm_lat_b = nn.BatchNorm2d(1024, momentum=0.5)
-        self.norm_lat_c = nn.BatchNorm2d(512, momentum=0.5) 
+        self.norm_lat_c = nn.BatchNorm2d(1024, momentum=0.5) 
 
         # Decode stage 5
-        self.up_5 = nn.ConvTranspose2d(512, 512, kernel_size=2, stride=2, padding=0)    
+        self.up_5 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2, padding=0)    
         self.dec_5a = nn.Conv2d(2*512, 512, kernel_size=3, padding=1)
         self.dec_5b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.dec_5c = nn.Conv2d(512, 512, kernel_size=3, padding=1)
@@ -177,29 +177,29 @@ class SegNet(nn.Module):
         self.up_4 = nn.ConvTranspose2d(512, 512, kernel_size=2, stride=2, padding=0) 
         self.dec_4a = nn.Conv2d(2*512, 512, kernel_size=3, padding=1)
         self.dec_4b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.dec_4c = nn.Conv2d(512, 256, kernel_size=3, padding=1)
+        self.dec_4c = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.norm_dec_4a = nn.BatchNorm2d(512, momentum=0.5)
         self.norm_dec_4b = nn.BatchNorm2d(512, momentum=0.5)
-        self.norm_dec_4c = nn.BatchNorm2d(256, momentum=0.5)
+        self.norm_dec_4c = nn.BatchNorm2d(512, momentum=0.5)
 
         # Decode stage 3    
-        self.up_3 = nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2, padding=0) 
+        self.up_3 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2, padding=0) 
         self.dec_3a = nn.Conv2d(2*256, 256, kernel_size=3, padding=1)
         self.dec_3b = nn.Conv2d(256, 256, kernel_size=3, padding=1)
-        self.dec_3c = nn.Conv2d(256, 128, kernel_size=3, padding=1)
+        self.dec_3c = nn.Conv2d(256, 256, kernel_size=3, padding=1)
         self.norm_dec_3a = nn.BatchNorm2d(256, momentum=0.5)
         self.norm_dec_3b = nn.BatchNorm2d(256, momentum=0.5)
-        self.norm_dec_3c = nn.BatchNorm2d(128, momentum=0.5)
+        self.norm_dec_3c = nn.BatchNorm2d(256, momentum=0.5)
 
         # Decode stage 2  
-        self.up_2 = nn.ConvTranspose2d(128, 128, kernel_size=2, stride=2, padding=0)   
+        self.up_2 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2, padding=0)   
         self.dec_2a = nn.Conv2d(2*128, 128, kernel_size=3, padding=1)
-        self.dec_2b = nn.Conv2d(128, 64, kernel_size=3, padding=1)
+        self.dec_2b = nn.Conv2d(128, 128, kernel_size=3, padding=1)
         self.norm_dec_2a = nn.BatchNorm2d(128, momentum=0.5)
-        self.norm_dec_2b = nn.BatchNorm2d(64, momentum=0.5)
+        self.norm_dec_2b = nn.BatchNorm2d(128, momentum=0.5)
 
         # Decode stage 1  
-        self.up_1 = nn.ConvTranspose2d(64, 64, kernel_size=2, stride=2, padding=0)   
+        self.up_1 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2, padding=0)   
         self.dec_1a = nn.Conv2d(2*64, 64, kernel_size=3, padding=1)
         self.dec_1b = nn.Conv2d(64, 19, kernel_size=1, padding=0)
         self.norm_dec_1 = nn.BatchNorm2d(64, momentum=0.5)     
@@ -286,41 +286,42 @@ class SegNet(nn.Module):
 class Efficiency_model(nn.Module):
     def __init__(self):
         super().__init__()
+        self.quant = torch.quantization.QuantStub()
         self.enc_1a = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.enc_1b = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.enc_1b = nn.Conv2d(64, 64, kernel_size=3, padding=1, groups=4)
         self.norm_enc_1a = nn.BatchNorm2d(64)
         self.norm_enc_1b = nn.BatchNorm2d(64)
 
-        self.enc_2a = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.enc_2b = nn.Conv2d(128, 128, kernel_size=3, padding=1)
+        self.enc_2a = nn.Conv2d(64, 128, kernel_size=3, padding=1, groups=4)
+        self.enc_2b = nn.Conv2d(128, 128, kernel_size=3, padding=1, groups=8)
         self.norm_enc_2a = nn.BatchNorm2d(128)
         self.norm_enc_2b = nn.BatchNorm2d(128)
 
-        self.enc_3a = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-        self.enc_3b = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+        self.enc_3a = nn.Conv2d(128, 256, kernel_size=3, padding=1, groups=8)
+        self.enc_3b = nn.Conv2d(256, 256, kernel_size=3, padding=1, groups=16)
         self.norm_enc_3a = nn.BatchNorm2d(256)
         self.norm_enc_3b = nn.BatchNorm2d(256)
         
-        self.conv_latent_a = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-        self.conv_latent_b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.conv_latent_a = nn.Conv2d(256, 512, kernel_size=3, padding=1, groups=16)
+        self.conv_latent_b = nn.Conv2d(512, 512, kernel_size=3, padding=1, groups=32)
         self.norm_lat_a = nn.BatchNorm2d(512)
         self.norm_lat_b = nn.BatchNorm2d(512)
 
         self.up_3 = nn.ConvTranspose2d(512, 256, kernel_size=3, stride=3, padding=0)
-        self.dec_3a = nn.Conv2d(512, 256, kernel_size=3, padding=1)
-        self.dec_3b = nn.Conv2d(256, 256, kernel_size=3, padding=1)
+        self.dec_3a = nn.Conv2d(512, 256, kernel_size=3, padding=1, groups=16)
+        self.dec_3b = nn.Conv2d(256, 256, kernel_size=3, padding=1, groups=16)
         self.norm_dec_3a = nn.BatchNorm2d(256)
         self.norm_dec_3b = nn.BatchNorm2d(256)
 
         self.up_2 = nn.ConvTranspose2d(256, 128, kernel_size=3, stride=3, padding=0)
-        self.dec_2a = nn.Conv2d(256, 128, kernel_size=3, padding=1)
-        self.dec_2b = nn.Conv2d(128, 128, kernel_size=3, padding=1)
+        self.dec_2a = nn.Conv2d(256, 128, kernel_size=3, padding=1, groups=8)
+        self.dec_2b = nn.Conv2d(128, 128, kernel_size=3, padding=1, groups=8)
         self.norm_dec_2a = nn.BatchNorm2d(128)
         self.norm_dec_2b = nn.BatchNorm2d(128)
 
         self.up_1 = nn.ConvTranspose2d(128, 64, kernel_size=3, stride=3, padding=0)
-        self.dec_1a = nn.Conv2d(128, 64, kernel_size=3, padding=1)
-        self.dec_1b = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.dec_1a = nn.Conv2d(128, 64, kernel_size=3, padding=1, groups=4)
+        self.dec_1b = nn.Conv2d(64, 64, kernel_size=3, padding=1, groups=4)
         self.norm_dec_1a = nn.BatchNorm2d(64)
         self.norm_dec_1b = nn.BatchNorm2d(64)
 
@@ -328,9 +329,11 @@ class Efficiency_model(nn.Module):
 
         self.pool = nn.MaxPool2d((3, 3))
         self.dropout = nn.Dropout(0.25)
+        self.dequant = torch.quantization.DeQuantStub()
 
     def forward(self, x):
         # Encode
+        x = self.quant(x)
         x = self.norm_enc_1a(function.relu(self.enc_1a(x)))
         x1 = self.norm_enc_1b(function.relu(self.enc_1b(x)))
         x = self.dropout(self.pool(x1))
@@ -369,5 +372,6 @@ class Efficiency_model(nn.Module):
 
         # Out
         x = self.out(x)
+        x = self.dequant(x)
 
         return x
