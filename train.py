@@ -141,7 +141,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet meets Unet')
+    torch.save(model.state_dict(), 'Efficiency net +')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -150,7 +150,7 @@ def main(args):
     plt.ylabel("Loss")
     plt.title("Loss of neural network")
     plt.legend()
-    plt.savefig('Train performance of SegNet meets Unet model')
+    plt.savefig('Train performance of efficiency net +')
 
     pass
 
