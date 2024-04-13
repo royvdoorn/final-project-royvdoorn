@@ -2,6 +2,8 @@
 This file needs to contain the main training loop. The training code should be encapsulated in a main() function to
 avoid any global variables.
 """
+import torch.ao.quantization
+import torch.quantization.quantize_fx
 from torchvision.datasets import Cityscapes
 import torchvision.transforms.v2 as transforms
 from argparse import ArgumentParser
@@ -15,6 +17,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import utils
 import torch.nn.utils.prune as prune
+#from thop import profile
+#import time
+#from torchsummary import summary
+#import torchvision.models as models
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -93,7 +99,7 @@ def main(args):
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#, num_worker=8)
 
     # define model
-    model = Efficiency_model()#.cuda()
+    model = SegNet()#.cuda()
     #model.load_state_dict(torch.load("SegNet model"))
 
     #layers_not_to_freeze = ['dec_1', 'dec_2', 'dec_3', 'dec_4', 'dec_5']
@@ -141,7 +147,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'Efficiency net +')
+    torch.save(model.state_dict(), 'SegNet meets Unet')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -150,7 +156,7 @@ def main(args):
     plt.ylabel("Loss")
     plt.title("Loss of neural network")
     plt.legend()
-    plt.savefig('Train performance of efficiency net +')
+    plt.savefig('Train performance of Segnet meets Unet')
 
     pass
 
@@ -186,11 +192,11 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet meets Unet"))
+    model_SegNet.load_state_dict(torch.load("models\\Segnet meets Unet"))
     model_SegNet.eval()
 
-    model_Unet = Unet()
-    model_Unet.load_state_dict(torch.load("models\\Unet"))
+    model_Unet = Efficiency_model()
+    model_Unet.load_state_dict(torch.load("models\\quantized efficiency net +"))
     model_Unet.eval()
 
     mean = [0.485, 0.456, 0.406]
@@ -204,7 +210,7 @@ def visualize():
     norm = BoundaryNorm(bounds, len(colors))
 
     # define transform
-    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -241,9 +247,9 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('SegNet meet Unet')
+        axs[0].set_title('efficiency +')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
-        axs[1].set_title('Unet')
+        axs[1].set_title('SegNet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
         axs[2].set_title('Y')
         axs[3].imshow(X)
@@ -253,8 +259,8 @@ def visualize():
         break
 
 def visualize_report():
-    model = Unet()
-    model.load_state_dict(torch.load("models\\Original_model_25_epoch"))
+    model = Efficiency_model()
+    model.load_state_dict(torch.load("models\\Efficiency net +"))
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
     
@@ -266,7 +272,7 @@ def visualize_report():
     norm = BoundaryNorm(bounds, len(colors))
 
     # define transform
-    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=mean, std=std)])
     
@@ -299,24 +305,126 @@ def visualize_report():
         break
 
 def prune_model():
-    model = Model()
-    model.load_state_dict(torch.load("models\\extended_u_net"))
+    model = Efficiency_model()
+    model.load_state_dict(torch.load("models\\efficiency net +"))
 
     params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(params)
 
     for name, module in model.named_modules():
         if isinstance(module, nn.Conv2d):
-            prune.l1_unstructured(module, 'weight', 0.5)
+            prune.l1_unstructured(module, 'weight', 0.25)
             prune.remove(module, 'weight')
 
     params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(params)
 
     # save model
-    torch.save(model.state_dict(), 'pruned_extended_u_net')    
+    torch.save(model.state_dict(), 'models\\pruned efficiency net +')    
 
     pass
+
+def quantize_model():
+    model = Efficiency_model()
+    model.load_state_dict(torch.load("models\\Efficiency net +"))
+    model.eval()
+
+    # attach a global qconfig, which contains information about what kind
+    # of observers to attach. Use 'x86' for server inference and 'qnnpack'
+    # for mobile inference. Other quantization configurations such as selecting
+    # symmetric or asymmetric quantization and MinMax or L2Norm calibration techniques
+    # can be specified here.
+    # Note: the old 'fbgemm' is still available but 'x86' is the recommended default
+    # for server inference.
+    # model_fp32.qconfig = torch.ao.quantization.get_default_qconfig('fbgemm')
+    model.qconfig = torch.ao.quantization.get_default_qconfig('x86')
+
+    # Fuse the activations to preceding layers, where applicable.
+    # This needs to be done manually depending on the model architecture.
+    # Common fusions include `conv + relu` and `conv + batchnorm + relu`
+    model_fused = torch.ao.quantization.fuse_modules(model, [['enc_1a', 'norm_enc_1a'], ['enc_1b', 'norm_enc_1b'],
+                                                             ['enc_2a', 'norm_enc_2a'], ['enc_2b', 'norm_enc_2b'],
+                                                             ['enc_3a', 'norm_enc_3a'], ['enc_3b', 'norm_enc_3b'],
+                                                             ['conv_latent_a', 'norm_lat_a'], ['conv_latent_b', 'norm_lat_b'], 
+                                                             ['dec_1a', 'norm_dec_1a'], ['dec_1b', 'norm_dec_1b'],
+                                                             ['dec_2a', 'norm_dec_2a'], ['dec_2b', 'norm_dec_2b'],
+                                                             ['enc_3a', 'norm_dec_3a'], ['enc_3b', 'norm_dec_3b'],])
+
+    # Prepare the model for static quantization. This inserts observers in
+    # the model that will observe activation tensors during calibration.
+    model_prepared = torch.ao.quantization.prepare(model_fused, allow_list=['enc_1a', 'norm_enc_1a','enc_1b', 'norm_enc_1b',
+                                                                           'enc_2a', 'norm_enc_2a', 'enc_2b', 'norm_enc_2b',
+                                                                           'enc_3a', 'norm_enc_3a', 'enc_3b', 'norm_enc_3b',
+                                                                           'conv_latent_a', 'norm_lat_a', 'conv_latent_b', 'norm_lat_b', 
+                                                                           'dec_1a', 'norm_dec_1a', 'dec_1b', 'norm_dec_1b',
+                                                                           'dec_2a', 'norm_dec_2a', 'dec_2b', 'norm_dec_2b',
+                                                                           'enc_3a', 'norm_dec_3a', 'enc_3b', 'norm_dec_3b'])
+
+    # calibrate the prepared model to determine quantization parameters for activations
+    # in a real world setting, the calibration would be done with a representative dataset
+        # define transform
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
+                                            transforms.ToTensor(),
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+    path_local = "C:\\Users\\20192326\\Documents\\YEAR 1 AIES\\Neural networks for computer vision\\Assignment\\data"
+    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=regular_transform)#, target_transform=complete_transform) #args.data_path
+    batch_size = 15
+    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    X, Y = train_loader[0]
+    model_prepared(X)
+
+    # Convert the observed model to a quantized model. This does several things:
+    # quantizes the weights, computes and stores the scale and bias value to be
+    # used with each activation tensor, and replaces key operators with quantized
+    # implementations.
+    model_quantized = torch.ao.quantization.convert(model_prepared)
+
+    # run the model, relevant calculations will happen in int8
+    res = model_quantized(X)
+
+    torch.save(model_quantized.state_dict(), 'models\\quantized efficiency net +')  
+
+
+def count_flops():
+    model = Efficiency_model()
+    model.load_state_dict(torch.load("models\\quantized efficiency net +"))
+
+
+    # define transform
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
+                                            transforms.ToTensor(),
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+    path_local = "C:\\Users\\20192326\\Documents\\YEAR 1 AIES\\Neural networks for computer vision\\Assignment\\data"
+    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=regular_transform)#, target_transform=complete_transform) #args.data_path
+    batch_size = 1
+    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    i = 0
+    inference_time = 0
+    gflops_per_second = 0
+    for X, Y in train_loader:
+        # Measure the inference time
+        start_time = time.time()
+        output = model(X)
+        inference_time_instance = time.time() - start_time
+        inference_time += inference_time_instance
+
+        X = X.unsqueeze(0) 
+        flops, params = profile(model=model, inputs=X)
+        
+        # Calculate GFLOPs per second
+        gflops_per_second += (flops/1e9) / inference_time_instance
+        i+=1
+        if (i == 50):
+            break
+    
+    
+    print("Inference time: "+ str(inference_time/i))
+    print("Amounf of flops in model: " + str(flops))
+    print("Amount of GFLOPs: " + str(gflops_per_second/i))
+    print("Amount of parameters: " + str(params))
+
 
 if __name__ == "__main__":
     # Get the arguments
@@ -327,7 +435,9 @@ if __name__ == "__main__":
     #visualize()
     #visualize_report()
     
+    #count_flops()
     #prune_model()
+    #quantize_model()
 
     #model = Model()
     #params = sum(p.numel() for p in model.parameters() if p.requires_grad)
