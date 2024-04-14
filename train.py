@@ -147,7 +147,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet meets Unet')
+    torch.save(model.state_dict(), 'SegNet meets Unet +')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -156,7 +156,7 @@ def main(args):
     plt.ylabel("Loss")
     plt.title("Loss of neural network")
     plt.legend()
-    plt.savefig('Train performance of Segnet meets Unet')
+    plt.savefig('Train performance of Segnet meets Unet +')
 
     pass
 
@@ -192,11 +192,11 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\Segnet meets Unet"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet meets Unet"))
     model_SegNet.eval()
 
-    model_Unet = Efficiency_model()
-    model_Unet.load_state_dict(torch.load("models\\quantized efficiency net +"))
+    model_Unet = Unet()
+    model_Unet.load_state_dict(torch.load("models\\Unet"))
     model_Unet.eval()
 
     mean = [0.485, 0.456, 0.406]
@@ -210,7 +210,7 @@ def visualize():
     norm = BoundaryNorm(bounds, len(colors))
 
     # define transform
-    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
+    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -247,9 +247,9 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('efficiency +')
+        axs[0].set_title('Segnet meets Unet')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
-        axs[1].set_title('SegNet')
+        axs[1].set_title('Unet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
         axs[2].set_title('Y')
         axs[3].imshow(X)

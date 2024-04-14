@@ -156,6 +156,14 @@ class SegNet(nn.Module):
         self.norm_enc_5b = nn.BatchNorm2d(512, momentum=0.5)
         self.norm_enc_5c = nn.BatchNorm2d(512, momentum=0.5) 
 
+        # Encode stage 6
+        self.enc_6a = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.enc_6b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.enc_6c = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.norm_enc_6a = nn.BatchNorm2d(512, momentum=0.5)
+        self.norm_enc_6b = nn.BatchNorm2d(512, momentum=0.5)
+        self.norm_enc_6c = nn.BatchNorm2d(512, momentum=0.5) 
+
         # Encode latent
         self.lat_a = nn.Conv2d(512, 1024, kernel_size=3, padding=1)
         self.lat_b = nn.Conv2d(1024, 1024, kernel_size=3, padding=1)
@@ -164,8 +172,17 @@ class SegNet(nn.Module):
         self.norm_lat_b = nn.BatchNorm2d(1024, momentum=0.5)
         self.norm_lat_c = nn.BatchNorm2d(1024, momentum=0.5) 
 
+        # Decode stage 6
+        self.up_6 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2, padding=0)    
+        self.dec_6a = nn.Conv2d(2*512, 512, kernel_size=3, padding=1)
+        self.dec_6b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.dec_6c = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+        self.norm_dec_6a = nn.BatchNorm2d(512, momentum=0.5)
+        self.norm_dec_6b = nn.BatchNorm2d(512, momentum=0.5)
+        self.norm_dec_6c = nn.BatchNorm2d(512, momentum=0.5) 
+
         # Decode stage 5
-        self.up_5 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2, padding=0)    
+        self.up_5 = nn.ConvTranspose2d(512, 512, kernel_size=2, stride=2, padding=0)    
         self.dec_5a = nn.Conv2d(2*512, 512, kernel_size=3, padding=1)
         self.dec_5b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.dec_5c = nn.Conv2d(512, 512, kernel_size=3, padding=1)
@@ -237,13 +254,27 @@ class SegNet(nn.Module):
         x5 = function.relu(self.norm_enc_5c(self.enc_5c(x)))
         x, ind5 = self.pool(x5)
 
+        # Encode stage 6
+        x = function.relu(self.norm_enc_6a(self.enc_6a(x))) 
+        x = function.relu(self.norm_enc_6b(self.enc_6b(x))) 
+        x6 = function.relu(self.norm_enc_6c(self.enc_6c(x)))
+        x, ind6 = self.pool(x6)
+
         # Latent space
         x = function.relu(self.norm_lat_a(self.lat_a(x))) 
         x = function.relu(self.norm_lat_b(self.lat_b(x))) 
         x = function.relu(self.norm_lat_c(self.lat_c(x)))
 
+        # Decode Stage 6
+        #x = self.unpool(x, ind6, output_size=size4)
+        x = self.up_6(x)
+        x = torch.cat([x, x6], axis=1)
+        x = function.relu(self.norm_dec_6a(self.dec_6a(x)))
+        x = function.relu(self.norm_dec_6b(self.dec_6b(x)))
+        x = function.relu(self.norm_dec_6c(self.dec_6c(x)))
+
         # Decode Stage 5
-        #x = self.unpool(x, ind5, output_size=size4)
+        #x = self.unpool(x, ind5, output_size=size3)
         x = self.up_5(x)
         x = torch.cat([x, x5], axis=1)
         x = function.relu(self.norm_dec_5a(self.dec_5a(x)))
