@@ -112,7 +112,7 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
 
     # training/validation loop
-    epochs = 25
+    epochs = 30
 
     train_loss = []
     val_loss = []
@@ -192,7 +192,7 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet meets Unet"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet meets Unet +"))
     model_SegNet.eval()
 
     model_Unet = Unet()
@@ -247,7 +247,7 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('Segnet meets Unet')
+        axs[0].set_title('Segnet meets Unet +')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
         axs[1].set_title('Unet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
