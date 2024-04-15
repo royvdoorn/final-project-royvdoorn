@@ -108,7 +108,7 @@ def main(args):
     # define optimizer and loss function (don't forget to ignore class index 255)
     #weights = torch.tensor([1.0, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 1.5, 1.0, 1.5, 1.0, 1.5, 2.0, 1.0, 2.0, 1.5, 2.0, 2.0, 1.5])
     criterion = torch.nn.CrossEntropyLoss(ignore_index=255).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
 
     # training/validation loop
@@ -147,7 +147,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet +')
+    torch.save(model.state_dict(), 'SegNet ++')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -156,7 +156,7 @@ def main(args):
     plt.ylabel("Loss")
     plt.title("Loss of neural network")
     plt.legend()
-    plt.savefig('Train performance of Segnet +')
+    plt.savefig('Train performance of Segnet ++')
 
     pass
 
@@ -192,7 +192,7 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet meets Unet +"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet +"))
     model_SegNet.eval()
 
     model_Unet = Unet()
@@ -247,7 +247,7 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('Segnet meets Unet +')
+        axs[0].set_title('Segnet +')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
         axs[1].set_title('Unet')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
