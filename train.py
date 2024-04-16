@@ -430,9 +430,9 @@ if __name__ == "__main__":
     # Get the arguments
     parser = get_arg_parser()
     args = parser.parse_args()
-    #main(args)
+    main(args)
 
-    visualize()
+    #visualize()
     #visualize_report()
     
     #count_flops()
