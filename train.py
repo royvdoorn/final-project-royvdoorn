@@ -73,7 +73,7 @@ def freeze_layers(model, layers_not_to_freeze):
 def main(args):
     """define your model, trainingsloop optimitzer etc. here"""
 
-    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
+    regular_transform = transforms.Compose([transforms.Resize((512, 512)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -108,7 +108,7 @@ def main(args):
     # define optimizer and loss function (don't forget to ignore class index 255)
     #weights = torch.tensor([1.0, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 1.5, 1.0, 1.5, 1.0, 1.5, 2.0, 1.0, 2.0, 1.5, 2.0, 2.0, 1.5])
     criterion = torch.nn.CrossEntropyLoss(ignore_index=255).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.0001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
 
     # training/validation loop
@@ -192,11 +192,11 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet +"))
+    model_SegNet.load_state_dict(torch.load("models\\SegNet ++"))
     model_SegNet.eval()
 
-    model_Unet = Unet()
-    model_Unet.load_state_dict(torch.load("models\\Unet"))
+    model_Unet = SegNet()
+    model_Unet.load_state_dict(torch.load("models\\SegNet +"))
     model_Unet.eval()
 
     mean = [0.485, 0.456, 0.406]
@@ -247,9 +247,9 @@ def visualize():
 
         fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('Segnet +')
+        axs[0].set_title('Segnet ++')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
-        axs[1].set_title('Unet')
+        axs[1].set_title('Segnet +')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
         axs[2].set_title('Y')
         axs[3].imshow(X)
@@ -430,9 +430,9 @@ if __name__ == "__main__":
     # Get the arguments
     parser = get_arg_parser()
     args = parser.parse_args()
-    main(args)
+    #main(args)
 
-    #visualize()
+    visualize()
     #visualize_report()
     
     #count_flops()
