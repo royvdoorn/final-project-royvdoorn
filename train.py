@@ -156,7 +156,7 @@ def main(args):
     plt.ylabel("Loss")
     plt.title("Loss of neural network")
     plt.legend()
-    plt.savefig('Train performance of Segnet long training")
+    plt.savefig("Train performance of Segnet long training")
 
     pass
 
