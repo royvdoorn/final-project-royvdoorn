@@ -112,7 +112,7 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
 
     # training/validation loop
-    epochs = 40
+    epochs = 25
 
     train_loss = []
     val_loss = []
@@ -286,7 +286,7 @@ def visualize_report():
         prediction = model(X)
         processed = postprocess(prediction, shape=(256, 256))
 
-        fig, axs = plt.subplots(1, 3, figsize=(12, 6))  # 1 row, 2 columns
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6))  # 1 row, 2 columns
         X = X.cpu().detach().numpy().squeeze(0).transpose(1, 2, 0)
         X = X * std + mean
         Y = (Y*255).squeeze(1)#.cpu().detach().numpy().transpose(1, 2, 0)
@@ -295,12 +295,12 @@ def visualize_report():
         Y[Y == 255] = 0
 
         axs[0].imshow(X)
-        axs[0].set_title('X')
+        axs[0].set_title('Input image')
         axs[1].imshow(Y, cmap=custom_cmap, norm=norm)
-        axs[1].set_title('Y')
-        axs[2].imshow(processed, cmap=custom_cmap, norm=norm)
-        axs[2].set_title('prediction')
-        fig.suptitle('Report visualization')
+        axs[1].set_title('Segmentation mask')
+        #axs[2].imshow(processed, cmap=custom_cmap, norm=norm)
+        #axs[2].set_title('prediction')
+        fig.suptitle('Cityscapes example')
         plt.savefig("Images\\Report visualization.png")
         break
 

@@ -155,10 +155,10 @@ class SegNet(nn.Module):
         self.norm_enc_5a = nn.BatchNorm2d(512, momentum=0.5)
         self.norm_enc_5b = nn.BatchNorm2d(512, momentum=0.5)
         self.norm_enc_5c = nn.BatchNorm2d(512, momentum=0.5) 
-        
+
         # Decode stage 5
         #self.up_5 = nn.ConvTranspose2d(512, 512, kernel_size=2, stride=2, padding=0)    
-        self.dec_5a = nn.Conv2d(2*512, 512, kernel_size=3, padding=1)
+        self.dec_5a = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.dec_5b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.dec_5c = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.norm_dec_5a = nn.BatchNorm2d(512, momentum=0.5)
@@ -167,7 +167,7 @@ class SegNet(nn.Module):
 
         # Decode stage 4    
         #self.up_4 = nn.ConvTranspose2d(512, 512, kernel_size=2, stride=2, padding=0) 
-        self.dec_4a = nn.Conv2d(2*512, 512, kernel_size=3, padding=1)
+        self.dec_4a = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.dec_4b = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.dec_4c = nn.Conv2d(512, 256, kernel_size=3, padding=1)
         self.norm_dec_4a = nn.BatchNorm2d(512, momentum=0.5)
@@ -176,7 +176,7 @@ class SegNet(nn.Module):
 
         # Decode stage 3    
         #self.up_3 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2, padding=0) 
-        self.dec_3a = nn.Conv2d(2*256, 256, kernel_size=3, padding=1)
+        self.dec_3a = nn.Conv2d(256, 256, kernel_size=3, padding=1)
         self.dec_3b = nn.Conv2d(256, 256, kernel_size=3, padding=1)
         self.dec_3c = nn.Conv2d(256, 128, kernel_size=3, padding=1)
         self.norm_dec_3a = nn.BatchNorm2d(256, momentum=0.5)
@@ -185,14 +185,14 @@ class SegNet(nn.Module):
 
         # Decode stage 2  
         #self.up_2 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2, padding=0)   
-        self.dec_2a = nn.Conv2d(2*128, 128, kernel_size=3, padding=1)
+        self.dec_2a = nn.Conv2d(128, 128, kernel_size=3, padding=1)
         self.dec_2b = nn.Conv2d(128, 64, kernel_size=3, padding=1)
         self.norm_dec_2a = nn.BatchNorm2d(128, momentum=0.5)
         self.norm_dec_2b = nn.BatchNorm2d(64, momentum=0.5)
 
         # Decode stage 1  
         #self.up_1 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2, padding=0)   
-        self.dec_1a = nn.Conv2d(2*64, 64, kernel_size=3, padding=1)
+        self.dec_1a = nn.Conv2d(64, 64, kernel_size=3, padding=1)
         self.dec_1b = nn.Conv2d(64, 19, kernel_size=1, padding=0)
         self.norm_dec_1 = nn.BatchNorm2d(64, momentum=0.5)     
 
@@ -233,7 +233,7 @@ class SegNet(nn.Module):
         # Decode Stage 5
         x = self.unpool(x, ind5, output_size=size4)
         #x = self.up_5(x)
-        x = torch.cat([x, x5], axis=1)
+        #x = torch.cat([x, x5], axis=1)
         x = function.relu(self.norm_dec_5a(self.dec_5a(x)))
         x = function.relu(self.norm_dec_5b(self.dec_5b(x)))
         x = function.relu(self.norm_dec_5c(self.dec_5c(x)))
@@ -241,7 +241,7 @@ class SegNet(nn.Module):
         # Decode Stage 4
         x = self.unpool(x, ind4, output_size=size3)
         #x = self.up_4(x)
-        x = torch.cat([x, x4], axis=1)
+        #x = torch.cat([x, x4], axis=1)
         x = function.relu(self.norm_dec_4a(self.dec_4a(x)))
         x = function.relu(self.norm_dec_4b(self.dec_4b(x)))
         x = function.relu(self.norm_dec_4c(self.dec_4c(x)))
@@ -249,7 +249,7 @@ class SegNet(nn.Module):
         # Decode Stage 3
         x = self.unpool(x, ind3, output_size=size2)
         #x = self.up_3(x)
-        x = torch.cat([x, x3], axis=1)
+        #x = torch.cat([x, x3], axis=1)
         x = function.relu(self.norm_dec_3a(self.dec_3a(x)))
         x = function.relu(self.norm_dec_3b(self.dec_3b(x)))
         x = function.relu(self.norm_dec_3c(self.dec_3c(x)))
@@ -257,14 +257,14 @@ class SegNet(nn.Module):
         # Decode Stage 2
         x = self.unpool(x, ind2, output_size=size1)
         #x = self.up_2(x)
-        x = torch.cat([x, x2], axis=1)
+        #x = torch.cat([x, x2], axis=1)
         x = function.relu(self.norm_dec_2a(self.dec_2a(x)))
         x = function.relu(self.norm_dec_2b(self.dec_2b(x)))
 
         # Decode Stage 1
         x = self.unpool(x, ind1)
         #x = self.up_1(x)
-        x = torch.cat([x, x1], axis=1)
+        #x = torch.cat([x, x1], axis=1)
         x = function.relu(self.norm_dec_1(self.dec_1a(x)))
         x = self.dec_1b(x)
 
@@ -322,38 +322,45 @@ class Efficiency_model(nn.Module):
     def forward(self, x):
         # Encode
         x = self.quant(x)
+        print(np.shape(x))
         x = self.norm_enc_1a(function.relu(self.enc_1a(x)))
         x1 = self.norm_enc_1b(function.relu(self.enc_1b(x)))
         x = self.dropout(self.pool(x1))
 
         # Encode
+        print(np.shape(x))
         x = self.norm_enc_2a(function.relu(self.enc_2a(x)))
         x2 = self.norm_enc_2b(function.relu(self.enc_2b(x)))
         x = self.dropout(self.pool(x2))
 
         # Encode
+        print(np.shape(x))
         x = self.norm_enc_3a(function.relu(self.enc_3a(x)))
         x3 = self.norm_enc_3b(function.relu(self.enc_3b(x)))
         x = self.dropout(self.pool(x3))
 
         # Latent
+        print(np.shape(x))
         x = self.norm_lat_a(function.relu(self.conv_latent_a(x)))
         x = self.norm_lat_b(function.relu(self.conv_latent_b(x)))
 
         # Decode
         x = self.up_3(x)
+        print(np.shape(x))
         x = torch.cat([x, x3], dim=1)
         x = self.norm_dec_3a(function.relu(self.dec_3a(x)))
         x = self.dropout(self.norm_dec_3b(function.relu(self.dec_3b(x))))
 
         # Decode
         x = self.up_2(x)
+        print(np.shape(x))
         x = torch.cat([x, x2], dim=1)
         x = self.norm_dec_2a(function.relu(self.dec_2a(x)))
         x = self.dropout(self.norm_dec_2b(function.relu(self.dec_2b(x))))
 
         # Decode
         x = self.up_1(x)
+        
         x = torch.cat([x, x1], dim=1)
         x = self.norm_dec_1a(function.relu(self.dec_1a(x)))
         x = self.dropout(self.norm_dec_1b(function.relu(self.dec_1b(x))))
