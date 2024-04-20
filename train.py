@@ -181,7 +181,7 @@ def preprocess(img):
 
 def visualize():
     model_SegNet = Efficiency_model()
-    
+
     # Prepare for loading quantized network
     custom_qconfig = torch.quantization.QConfig(activation=torch.quantization.default_observer,
                                                 weight=torch.quantization.default_weight_observer)
