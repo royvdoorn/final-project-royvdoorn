@@ -17,10 +17,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import utils
 import torch.nn.utils.prune as prune
-#from thop import profile
-#import time
-#from torchsummary import summary
-#import torchvision.models as models
+from thop import profile
+import time
+from torchsummary import summary
+import torchvision.models as models
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -36,14 +36,6 @@ class DiceLoss(nn.Module):
         self.smooth = smooth
 
     def forward(self, predictions, targets):
-        """
-        m = torch.nn.Softmax(dim=1)
-        prediction_soft = m(predictions)
-        prediction_max = torch.nn.functional.gumbel_softmax(prediction_soft, tau=1, hard=True, dim=1)
-        print(prediction_max.unique())
-        print(np.shape(prediction_max))
-        print(targets.unique())
-        """
         # Ignore index 255
         mask = targets != 255
         targets = targets[mask]
@@ -100,13 +92,10 @@ def main(args):
 
     # define model
     model = Efficiency_model()#.cuda()
-    #model.load_state_dict(torch.load("SegNet model"))
-
     #layers_not_to_freeze = ['dec_1', 'dec_2', 'dec_3', 'dec_4', 'dec_5']
     #freeze_layers(model, layers_not_to_freeze)
 
     # define optimizer and loss function (don't forget to ignore class index 255)
-    #weights = torch.tensor([1.0, 1.0, 1.0, 1.5, 1.5, 2.0, 2.0, 1.5, 1.0, 1.5, 1.0, 1.5, 2.0, 1.0, 2.0, 1.5, 2.0, 2.0, 1.5])
     criterion = torch.nn.CrossEntropyLoss(ignore_index=255).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.0001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 0.9)
@@ -191,8 +180,15 @@ def preprocess(img):
     return img
 
 def visualize():
-    model_SegNet = Unet()
-    model_SegNet.load_state_dict(torch.load("models\\Unet"))
+    model_SegNet = Efficiency_model()
+    
+    # Prepare for loading quantized network
+    custom_qconfig = torch.quantization.QConfig(activation=torch.quantization.default_observer,
+                                                weight=torch.quantization.default_weight_observer)
+    model_SegNet.qconfig = custom_qconfig
+    model_prepared = torch.quantization.prepare(model_SegNet, inplace=True)
+    model_SegNet = torch.ao.quantization.convert(model_prepared)
+    model_SegNet.load_state_dict(torch.load("models\\quantized efficiency net +"))
     model_SegNet.eval()
 
     model_Unet = Unet()
@@ -210,7 +206,7 @@ def visualize():
     norm = BoundaryNorm(bounds, len(colors))
 
     # define transform
-    regular_transform = transforms.Compose([transforms.Resize((128, 128)),
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -220,6 +216,8 @@ def visualize():
                                             transforms.RandomResizedCrop(size=(256,256), scale=(0.25, 0.75), ratio=(0.5, 1.5)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    
+    transorm_U_net = transforms.Compose([transforms.Resize((256, 256))])
 
     transform_x = transforms.Compose([transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
@@ -234,6 +232,8 @@ def visualize():
         processed_SegNet = postprocess(prediction_Segnet, shape=(256, 256))
         print("Unique classes in SegNet prediction: ", np.unique(processed_SegNet))
 
+        X = transorm_U_net(X)
+
         prediction_Unet = model_Unet(X)
         processed_Unet = postprocess(prediction_Unet, shape=(256, 256))
         print("Unique classes in Unet prediction:   ", np.unique(processed_Unet))
@@ -245,21 +245,22 @@ def visualize():
         X = X.cpu().detach().numpy().squeeze(0).transpose(1, 2, 0)
         X = X * std + mean
 
-        fig, axs = plt.subplots(1, 4, figsize=(12, 6))  # 1 row, 2 columns
+        fig, axs = plt.subplots(1, 3, figsize=(12, 6))
         axs[0].imshow(processed_SegNet, cmap=custom_cmap, norm=norm)
-        axs[0].set_title('Segnet ++')
+        axs[0].set_title('Efficiency net')
         axs[1].imshow(processed_Unet, cmap=custom_cmap, norm=norm)
-        axs[1].set_title('Segnet +')
+        axs[1].set_title('U-Net')
         axs[2].imshow(Y, cmap=custom_cmap, norm=norm)
-        axs[2].set_title('Y')
-        axs[3].imshow(X)
-        axs[3].set_title('X')
+        axs[2].set_title('Segmentation target')
+        #axs[3].imshow(X)
+        #axs[3].set_title('X')
         fig.suptitle('Segmentation')
         plt.savefig("Images\\segmented images of Unet and SegNet model.png")
         break
 
 def visualize_report():
     model = Efficiency_model()
+    model.eval()
     model.load_state_dict(torch.load("models\\Efficiency net +"))
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
@@ -286,10 +287,10 @@ def visualize_report():
         prediction = model(X)
         processed = postprocess(prediction, shape=(256, 256))
 
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))  # 1 row, 2 columns
+        fig, axs = plt.subplots(1, 3, figsize=(12, 6))
         X = X.cpu().detach().numpy().squeeze(0).transpose(1, 2, 0)
         X = X * std + mean
-        Y = (Y*255).squeeze(1)#.cpu().detach().numpy().transpose(1, 2, 0)
+        Y = (Y*255).squeeze(1)
         Y = utils.map_id_to_train_id(Y)
         Y = Y.cpu().detach().numpy().transpose(1, 2, 0)
         Y[Y == 255] = 0
@@ -298,8 +299,8 @@ def visualize_report():
         axs[0].set_title('Input image')
         axs[1].imshow(Y, cmap=custom_cmap, norm=norm)
         axs[1].set_title('Segmentation mask')
-        #axs[2].imshow(processed, cmap=custom_cmap, norm=norm)
-        #axs[2].set_title('prediction')
+        axs[2].imshow(processed, cmap=custom_cmap, norm=norm)
+        axs[2].set_title('prediction')
         fig.suptitle('Cityscapes example')
         plt.savefig("Images\\Report visualization.png")
         break
@@ -326,62 +327,13 @@ def prune_model():
 
 def quantize_model():
     model = Efficiency_model()
-    model.load_state_dict(torch.load("models\\Efficiency net +"))
+    model.load_state_dict(torch.load("models\\Efficiency quantized training"))
     model.eval()
-
-    # attach a global qconfig, which contains information about what kind
-    # of observers to attach. Use 'x86' for server inference and 'qnnpack'
-    # for mobile inference. Other quantization configurations such as selecting
-    # symmetric or asymmetric quantization and MinMax or L2Norm calibration techniques
-    # can be specified here.
-    # Note: the old 'fbgemm' is still available but 'x86' is the recommended default
-    # for server inference.
-    # model_fp32.qconfig = torch.ao.quantization.get_default_qconfig('fbgemm')
-    model.qconfig = torch.ao.quantization.get_default_qconfig('x86')
-
-    # Fuse the activations to preceding layers, where applicable.
-    # This needs to be done manually depending on the model architecture.
-    # Common fusions include `conv + relu` and `conv + batchnorm + relu`
-    model_fused = torch.ao.quantization.fuse_modules(model, [['enc_1a', 'norm_enc_1a'], ['enc_1b', 'norm_enc_1b'],
-                                                             ['enc_2a', 'norm_enc_2a'], ['enc_2b', 'norm_enc_2b'],
-                                                             ['enc_3a', 'norm_enc_3a'], ['enc_3b', 'norm_enc_3b'],
-                                                             ['conv_latent_a', 'norm_lat_a'], ['conv_latent_b', 'norm_lat_b'], 
-                                                             ['dec_1a', 'norm_dec_1a'], ['dec_1b', 'norm_dec_1b'],
-                                                             ['dec_2a', 'norm_dec_2a'], ['dec_2b', 'norm_dec_2b'],
-                                                             ['enc_3a', 'norm_dec_3a'], ['enc_3b', 'norm_dec_3b'],])
-
-    # Prepare the model for static quantization. This inserts observers in
-    # the model that will observe activation tensors during calibration.
-    model_prepared = torch.ao.quantization.prepare(model_fused, allow_list=['enc_1a', 'norm_enc_1a','enc_1b', 'norm_enc_1b',
-                                                                           'enc_2a', 'norm_enc_2a', 'enc_2b', 'norm_enc_2b',
-                                                                           'enc_3a', 'norm_enc_3a', 'enc_3b', 'norm_enc_3b',
-                                                                           'conv_latent_a', 'norm_lat_a', 'conv_latent_b', 'norm_lat_b', 
-                                                                           'dec_1a', 'norm_dec_1a', 'dec_1b', 'norm_dec_1b',
-                                                                           'dec_2a', 'norm_dec_2a', 'dec_2b', 'norm_dec_2b',
-                                                                           'enc_3a', 'norm_dec_3a', 'enc_3b', 'norm_dec_3b'])
-
-    # calibrate the prepared model to determine quantization parameters for activations
-    # in a real world setting, the calibration would be done with a representative dataset
-        # define transform
-    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
-                                            transforms.ToTensor(),
-                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-
-    path_local = "C:\\Users\\20192326\\Documents\\YEAR 1 AIES\\Neural networks for computer vision\\Assignment\\data"
-    dataset = Cityscapes(path_local, split='train', mode='fine', target_type='semantic', transforms=regular_transform)#, target_transform=complete_transform) #args.data_path
-    batch_size = 15
-    train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    X, Y = train_loader[0]
-    model_prepared(X)
-
-    # Convert the observed model to a quantized model. This does several things:
-    # quantizes the weights, computes and stores the scale and bias value to be
-    # used with each activation tensor, and replaces key operators with quantized
-    # implementations.
+    custom_qconfig = torch.quantization.QConfig(activation=torch.quantization.default_observer,
+                                                weight=torch.quantization.default_weight_observer)
+    model.qconfig = custom_qconfig
+    model_prepared = torch.quantization.prepare(model, inplace=True)
     model_quantized = torch.ao.quantization.convert(model_prepared)
-
-    # run the model, relevant calculations will happen in int8
-    res = model_quantized(X)
 
     torch.save(model_quantized.state_dict(), 'models\\quantized efficiency net +')  
 
@@ -389,7 +341,6 @@ def quantize_model():
 def count_flops():
     model = Efficiency_model()
     model.load_state_dict(torch.load("models\\quantized efficiency net +"))
-
 
     # define transform
     regular_transform = transforms.Compose([transforms.Resize((270, 270)),
@@ -430,9 +381,9 @@ if __name__ == "__main__":
     # Get the arguments
     parser = get_arg_parser()
     args = parser.parse_args()
-    main(args)
+    #main(args)
 
-    #visualize()
+    visualize()
     #visualize_report()
     
     #count_flops()
