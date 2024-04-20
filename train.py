@@ -73,7 +73,7 @@ def freeze_layers(model, layers_not_to_freeze):
 def main(args):
     """define your model, trainingsloop optimitzer etc. here"""
 
-    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
+    regular_transform = transforms.Compose([transforms.Resize((270, 270)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     
@@ -99,7 +99,7 @@ def main(args):
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#, num_worker=8)
 
     # define model
-    model = SegNet()#.cuda()
+    model = Efficiency_model()#.cuda()
     #model.load_state_dict(torch.load("SegNet model"))
 
     #layers_not_to_freeze = ['dec_1', 'dec_2', 'dec_3', 'dec_4', 'dec_5']
@@ -147,7 +147,7 @@ def main(args):
         print("Average validation loss of epoch " + str(i+1) + ": " + str(float(val_loss_epoch/len(val_loader))))
 
     # save model
-    torch.save(model.state_dict(), 'SegNet basic')
+    torch.save(model.state_dict(), 'Efficiency quantized training')
 
     # visualize training data
     plt.plot(range(1, epochs+1), train_loss, color='r', label='train loss')
@@ -156,7 +156,7 @@ def main(args):
     plt.ylabel("Loss")
     plt.title("Loss of neural network")
     plt.legend()
-    plt.savefig("Train performance of Segnet basic")
+    plt.savefig("Train performance of Efficiency quantized training")
 
     pass
 
@@ -191,12 +191,12 @@ def preprocess(img):
     return img
 
 def visualize():
-    model_SegNet = SegNet()
-    model_SegNet.load_state_dict(torch.load("models\\SegNet ++"))
+    model_SegNet = Unet()
+    model_SegNet.load_state_dict(torch.load("models\\Unet"))
     model_SegNet.eval()
 
-    model_Unet = SegNet()
-    model_Unet.load_state_dict(torch.load("models\\SegNet +"))
+    model_Unet = Unet()
+    model_Unet.load_state_dict(torch.load("models\\Unet"))
     model_Unet.eval()
 
     mean = [0.485, 0.456, 0.406]
@@ -210,7 +210,7 @@ def visualize():
     norm = BoundaryNorm(bounds, len(colors))
 
     # define transform
-    regular_transform = transforms.Compose([transforms.Resize((256, 256)),
+    regular_transform = transforms.Compose([transforms.Resize((128, 128)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
     

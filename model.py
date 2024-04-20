@@ -322,45 +322,38 @@ class Efficiency_model(nn.Module):
     def forward(self, x):
         # Encode
         x = self.quant(x)
-        print(np.shape(x))
         x = self.norm_enc_1a(function.relu(self.enc_1a(x)))
         x1 = self.norm_enc_1b(function.relu(self.enc_1b(x)))
         x = self.dropout(self.pool(x1))
 
         # Encode
-        print(np.shape(x))
         x = self.norm_enc_2a(function.relu(self.enc_2a(x)))
         x2 = self.norm_enc_2b(function.relu(self.enc_2b(x)))
         x = self.dropout(self.pool(x2))
 
         # Encode
-        print(np.shape(x))
         x = self.norm_enc_3a(function.relu(self.enc_3a(x)))
         x3 = self.norm_enc_3b(function.relu(self.enc_3b(x)))
         x = self.dropout(self.pool(x3))
 
         # Latent
-        print(np.shape(x))
         x = self.norm_lat_a(function.relu(self.conv_latent_a(x)))
         x = self.norm_lat_b(function.relu(self.conv_latent_b(x)))
 
         # Decode
         x = self.up_3(x)
-        print(np.shape(x))
         x = torch.cat([x, x3], dim=1)
         x = self.norm_dec_3a(function.relu(self.dec_3a(x)))
         x = self.dropout(self.norm_dec_3b(function.relu(self.dec_3b(x))))
 
         # Decode
         x = self.up_2(x)
-        print(np.shape(x))
         x = torch.cat([x, x2], dim=1)
         x = self.norm_dec_2a(function.relu(self.dec_2a(x)))
         x = self.dropout(self.norm_dec_2b(function.relu(self.dec_2b(x))))
 
         # Decode
         x = self.up_1(x)
-        
         x = torch.cat([x, x1], dim=1)
         x = self.norm_dec_1a(function.relu(self.dec_1a(x)))
         x = self.dropout(self.norm_dec_1b(function.relu(self.dec_1b(x))))
