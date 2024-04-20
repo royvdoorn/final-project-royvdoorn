@@ -19,7 +19,6 @@ import utils
 import torch.nn.utils.prune as prune
 from thop import profile
 import time
-from torchsummary import summary
 import torchvision.models as models
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
